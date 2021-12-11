@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MediatR;
 
 namespace OrderProcessor
 {
@@ -26,6 +27,7 @@ namespace OrderProcessor
 
             services.AddSingleton<ICustomersRepository, CustomersRepository>();
             services.AddSingleton<IOrdersRepository, OrdersRepository>();
+            services.AddMediatR(typeof(Startup));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

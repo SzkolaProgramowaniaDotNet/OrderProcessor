@@ -4,6 +4,9 @@ using OrderProcessor.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using OrderProcessor.Dtos;
+using OrderProcessor.Queries;
+using MediatR;
+using OrderProcessor.Commands;
 
 namespace OrderProcessor.Controllers
 {
@@ -13,40 +16,37 @@ namespace OrderProcessor.Controllers
     {
         private readonly IOrdersRepository _ordersRepository;
         private readonly ILogger<OrdersController> _logger;
+        private readonly IMediator _mediator;
 
-        public OrdersController(IOrdersRepository ordersRepository, ILogger<OrdersController> logger)
+        public OrdersController(IMediator mediator, IOrdersRepository ordersRepository, ILogger<OrdersController> logger)
         {
             _ordersRepository = ordersRepository;
             _logger = logger;
+            _mediator = mediator;
         }
         
         [HttpPost("")]
         public async Task<IActionResult> CreateOrder([FromBody] CreateCustomerOrderDto createCustomerOrder)
         {
-            var order = await _ordersRepository.CreateOrderAsync(createCustomerOrder.CustomerId, createCustomerOrder.ProductId);
-            _logger.LogInformation($"Created order for customer: {order.Customer.Id} for product: {order.Product.Id}");
-
-            return CreatedAtAction("GetOrder", new { orderId = order.Id }, order);
+            var command = new CreateCustomerOrderCommand(createCustomerOrder.CustomerId, createCustomerOrder.ProductId);
+            var result = await _mediator.Send(command);
+            return CreatedAtAction("GetOrder", new { orderId = result.Id }, result);
         }
 
         [HttpGet("{orderId}")]
         public async Task<IActionResult> GetOrder(Guid orderId)
         {
-            var orderDto = await _ordersRepository.GetOrderAsync(orderId);
-
-            if (orderDto == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(orderDto);
+            var query = new GetOrderByIdQuery(orderId);
+            var result = await _mediator.Send(query);
+            return result != null ? Ok(result) : NotFound();
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAllOrders()
         {
-            var ordersDto = await _ordersRepository.GetOrdersAsync();
-            return Ok(ordersDto);
+            var query = new GetAllOrdersQuery();
+            var result = await _mediator.Send(query);
+            return Ok(result);
         }
     }
 }
